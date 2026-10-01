@@ -575,8 +575,15 @@ export async function POST(request: Request) {
       phone_info: phoneInfo,
     })
   } catch (error) {
-    console.error('Error in WhatsApp config POST:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const detail =
+      error instanceof Error
+        ? `${error.name}: ${error.message}`
+        : JSON.stringify(error)
+    console.error('Error in WhatsApp config POST:', detail, error)
+    return NextResponse.json(
+      { error: 'Internal server error', detail },
+      { status: 500 },
+    )
   }
 }
 
