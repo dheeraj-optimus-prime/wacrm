@@ -15,3 +15,8 @@ docker-compose*.yml
 .vscode
 .idea
 coverage
+.open-next
+.wrangler
+wrangler.jsonc
+open-next.config.ts
+cloudflare-env.d.ts

@@ -1,0 +1,45 @@
+name: wacrm
+
+# Production compose for EC2.
+#
+# Unlike docker-compose.yml (which BUILDS from source), this file PULLS
+# the prebuilt image from Docker Hub. The NEXT_PUBLIC_* values are
+# already baked into that image at build time, so they do NOT appear
+# here — only runtime secrets are injected via env_file.
+#
+# Usage on the server:
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#   docker compose -f docker-compose.prod.yml pull   # grab a new image
+#   docker compose -f docker-compose.prod.yml up -d   # roll it out
+
+services:
+  app:
+    image: codewithme898/neuraltalk.ai:opencrm-ec2-v1
+    pull_policy: always
+    # Runtime (server-only) secrets come from .env.prod on the host.
+    env_file:
+      - .env.prod
+    # The server always listens on 3000 inside the container. Pinned
+    # here because `environment` wins over `env_file`, so a stray PORT
+    # in .env.prod can't desync the app from the mapping / healthcheck.
+    environment:
+      PORT: 3000
+    # Publish on the host. Behind a reverse proxy (Caddy/nginx) keep
+    # this bound to localhost so the app isn't reachable except through
+    # the proxy: set HOST_BIND=127.0.0.1 in .env.prod. Default exposes
+    # it on all interfaces for a quick test.
+    ports:
+      - '${HOST_BIND:-0.0.0.0}:${HOST_PORT:-3000}:3000'
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3000').then((r)=>process.exit(r.ok||r.status<500?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
